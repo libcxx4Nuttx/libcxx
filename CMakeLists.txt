@@ -30,6 +30,36 @@ MACRO_ENSURE_OUT_OF_SOURCE_BUILD(
  build directory and run 'cmake /path/to/${PROJECT_NAME} [options]' there."
  )
 
+#override checking  
+set(LIBCXX_HAS_PTHREAD_LIB 1)
+set(LIBCXX_HAS_C_LIB 1)
+set(LIBCXX_HAS_M_LIB 1)
+set(LIBCXX_HAS_RT_LIB 1)
+ 
+
+SET(COMMON_FLAGS "-mcpu=cortex-m4 -mthumb -march=armv7e-m -mfpu=fpv4-sp-d16 -mfloat-abi=hard -nostartfiles -fno-builtin -nostdlib")
+SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS}  -std=c++11 -nostdinc++" )
+SET(CMAKE_C_FLAGS "${COMMON_FLAGS} -nostdinc")
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,-gc-sections ")
+ 
+ 
+set(NUTTX_LIB_PATH ${PROJECT_SOURCE_DIR}/../NuttX/nuttx/lib)
+set(NUTTX_LIBCXX cxx)
+set(NUTTX_LIBC c)
+set(NUTTX_LIBS "-lapps  -larch  -lbinfmt -ldrivers -lfs -lmm  -lsched")
+
+
+
+set(NUTTX_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/../NuttX/nuttx/include)
+set(NEEDED_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/../needed/include)
+
+set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${NUTTX_INCLUDE_DIR})
+set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${NUTTX_LIB_PATH})
+
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -L${NUTTX_LIB_PATH} -l${NUTTX_LIBC} -l${NUTTX_LIBCXX} ${NUTTX_LIBS}")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${NUTTX_LIB_PATH} -l${NUTTX_LIBC} -l${NUTTX_LIBCXX} ${NUTTX_LIBS}")
+
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   set(LIBCXX_LIBDIR_SUFFIX "" CACHE STRING
       "Define suffix of library directory name (32/64)")
@@ -53,7 +83,7 @@ option(LIBCXX_ENABLE_ASSERTIONS "Enable assertions independent of build mode." O
 option(LIBCXX_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
 option(LIBCXX_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
 option(LIBCXX_ENABLE_CXX1Y "Enable -std=c++1y and use of c++1y language features if the compiler supports it." OFF)
-option(LIBCXX_ENABLE_SHARED "Build libc++ as a shared library." ON)
+option(LIBCXX_ENABLE_SHARED "Build libc++ as a shared library." OFF)
 option(LIBCXX_ENABLE_THREADS "Build libc++ with support for threads." ON)
 option(LIBCXX_BUILD_32_BITS "Build 32 bit libc++" OFF)
 option(LIBCXX_ENABLE_MONOTONIC_CLOCK
@@ -283,6 +313,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBCXX_CXX_FLAGS}")
 
 include_directories(include)
 add_subdirectory(include)
+include_directories(${NUTTX_INCLUDE_DIR})
+include_directories(${NUTTX_INCLUDE_DIR}/cxx)
+include_directories(${NUTTX_INCLUDE_DIR}/nuttx)
+include_directories(${NEEDED_INCLUDE_DIR})
+include_directories(${NEEDED_INCLUDE_DIR}/machine)
 
 # Add source code. This also contains all of the logic for deciding linker flags
 # soname, etc...
@@ -293,3 +328,6 @@ add_subdirectory(lib)
 #===============================================================================
 
 add_subdirectory(test)
+if (CXX_DUMP)
+include(../../Logging_Useful_Variables)
+endif()
